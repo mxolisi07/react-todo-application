@@ -1,7 +1,8 @@
 // import { useState } from 'react'
 // @ts-expect-error CSS imports are handled by the bundler.
 import './App.css'
-import { PlusCircle, Search } from "reicon-react"
+import { Search, Add, Moon, Trash, Pen } from "reicon-react"
+import '@fontsource/kanit'
 function App() {
   // const [count, setCount] = useState(0)
 
@@ -20,37 +21,65 @@ function App() {
             
             <div className='status'>
               <select>
-                <option>All</option>
-                <option>Complete</option>
-                <option>Incomplete</option>
+                <option className='text'>ALL</option>
+                <option className='text'>Complete</option>
+                <option className='text'>Incomplete</option>
               </select>
+            </div>
+
+            <div className='theme-mode'>
+              <Moon id='theme'/>
             </div>
 
           </div>
 
           <div className="hero-section">
             <label className="checkbox">
-                <input type="checkbox"></input>
-                NOTE #1
+                <div className='list-name'>
+                  <input className='main-checkbox' type="checkbox"></input>
+                  <h3>NOTE #1</h3>
+                </div>
+                
+                <div className='icons'>
+                    <Pen />
+                    <Trash />
+                </div>
             </label>
 
+              <hr></hr>
             <label className="checkbox">
-              <input type="checkbox"></input>
-                NOTE #2
+                <div className='list-name'>
+                  <input className='main-checkbox' type="checkbox"></input>
+                  <h3>NOTE #2</h3>
+                </div>
+                
+                <div className='icons'>
+                    <Pen />
+                    <Trash />
+                </div>
             </label>
-
+              <hr></hr>
             <label className="checkbox">
-              <input type="checkbox"></input>
-                NOTE #3
+                <div className='list-name'>
+                  <input className='main-checkbox' type="checkbox"></input>
+                  <h3>NOTE #3</h3>
+                </div>
+                
+                <div className='icons'>
+                    <Pen />
+                    <Trash />
+                </div>
             </label>
           </div>
 
           
 
         </div>
+
         <div className="add-icon">
-            <PlusCircle className="add" />
-          </div>
+            <Add className="add" />
+        </div>
+
       </section>
   )
 }
