@@ -6,22 +6,25 @@ function App() {
   // const [count, setCount] = useState(0)
 
   return (
-      <section className='home-container'>
-        <h2>TODO LIST</h2>
-        <div className='home-container2'>
-          
+      <section className='main-container'>
 
+        <h2>TODO LIST</h2>
+
+        <div className='home-container'>
+        
           <div className='hero-header'>
-            <div className='main-container'>
+            <div className='sub-header'>
               <input type="text" placeholder="Search note..."/>
               <Search id='search-icon'></Search>
             </div>
             
-            <select className="status">
-              <option>All</option>
-              <option>Complete</option>
-              <option>Incomplete</option>
-            </select>
+            <div className='status'>
+              <select>
+                <option>All</option>
+                <option>Complete</option>
+                <option>Incomplete</option>
+              </select>
+            </div>
 
           </div>
 
@@ -32,24 +35,22 @@ function App() {
             </label>
 
             <label className="checkbox">
-                <input type="checkbox"></input>
+              <input type="checkbox"></input>
                 NOTE #2
             </label>
 
             <label className="checkbox">
-                <input type="checkbox"></input>
+              <input type="checkbox"></input>
                 NOTE #3
             </label>
           </div>
 
-          <div className="add-icon">
-          <PlusCircle className="add" />
-        </div>
+          
 
         </div>
-
-        
-
+        <div className="add-icon">
+            <PlusCircle className="add" />
+          </div>
       </section>
   )
 }
