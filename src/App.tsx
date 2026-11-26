@@ -1,13 +1,24 @@
-// import { useState } from 'react'
+import { useState } from 'react'
 // @ts-expect-error CSS imports are handled by the bundler.
 import './App.css'
 import { Search, Add, Moon, Trash, Pen } from "reicon-react"
 import '@fontsource/kanit'
+import { AddList } from './components/addNewList'
+
 function App() {
-  // const [count, setCount] = useState(0)
+  const [showAddModel, setShowAddModel] = useState(false)
+
 
   return (
       <section className='main-container'>
+        {showAddModel && <div className='modal'>
+          {/* Give heading for the task & you do the input fields  for what the items */}
+          <div className='modal-show'>
+            <input type='text' placeholder='Title' id='title'></input>
+            <textarea></textarea>
+            <input type='date'></input>
+          </div>
+          </div>}
 
         <h2>TODO LIST</h2>
 
@@ -77,7 +88,15 @@ function App() {
         </div>
 
         <div className="add-icon">
-            <Add className="add" />
+          <button className='btn-add'>
+              <Add className="add" onClick={() => setShowAddModel(true)}/>
+          </button>
+        </div>
+
+        {/* The Modal */}
+        <div id='myModal' className='modal'>
+
+
         </div>
 
       </section>

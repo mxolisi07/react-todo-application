@@ -62,8 +62,11 @@ body {
   gap: 10px;
   background-color: rgb(119, 86, 252);
   height: 34px;
-  width: 80px;
+  width: 90px;
   font-family: 'Kanit', sans-serif;
+  border-radius: 5px;
+  padding: 5px;
+  color: #fff;
 }
 
 .text {
@@ -75,6 +78,7 @@ body {
   height: 34px;
   width: 36px;
   background-color: rgb(119, 86, 252);
+  border-radius: 5px;
 }
 
 .theme-mode #theme {
@@ -154,4 +158,16 @@ hr {
   width: 45px;
   border-radius: 25px;
   background-color: rgb(119, 86, 252);
+}
+
+.btn-add {
+  border: none;
+  color: #fff;
+  border-radius: 25px;
+}
+
+.modal-show {
+  display: flex;
+  flex-direction: column;
+  
 }
