@@ -3,22 +3,46 @@ import { useState } from 'react'
 import './App.css'
 import { Search, Add, Moon, Trash, Pen } from "reicon-react"
 import '@fontsource/kanit'
-import { AddList } from './components/addNewList'
+import type { userTasks } from './types/types'
+
 
 function App() {
   const [showAddModel, setShowAddModel] = useState(false)
 
+  // const [newTitle, setNewTitle] = useState("")
+  // const [newDescription, setNewDescription] = useState("")
+  // const [newDate, setNewDate] = useState("")
+
+  // const saveNewTask = () => {
+  //   const newTask = {
+  //     title: "",
+  //     description: "",
+  //     date: ""
+  //   }
+    
+  // }
 
   return (
       <section className='main-container'>
-        {showAddModel && <div className='modal'>
+        {showAddModel && (
+         <div className='modal'>
           {/* Give heading for the task & you do the input fields  for what the items */}
-          <div className='modal-show'>
-            <input type='text' placeholder='Title' id='title'></input>
-            <textarea></textarea>
-            <input type='date'></input>
-          </div>
-          </div>}
+            <div className='modal-content'>
+              <h3>NEW TASK</h3>
+              <label>TITLE</label>
+              <input type='text' placeholder='Title' id='title'></input>
+              <label>DESCRIPTION</label>
+              <textarea></textarea>
+              <label>DATE</label>
+              <input type='date'></input>
+
+              <div className='modal-actions'>
+                <button onClick={() => setShowAddModel(false)}>CANCEL</button>
+                <button>APPLY</button>
+              </div>
+            </div>
+            </div>
+        )}
 
         <h2>TODO LIST</h2>
 
@@ -58,7 +82,7 @@ function App() {
             </label>
 
               <hr></hr>
-            <label className="checkbox">
+            <div className="checkbox">
                 <div className='list-name'>
                   <input className='main-checkbox' type="checkbox"></input>
                   <h3>NOTE #2</h3>
@@ -68,7 +92,7 @@ function App() {
                     <Pen />
                     <Trash />
                 </div>
-            </label>
+            </div>
               <hr></hr>
             <label className="checkbox">
                 <div className='list-name'>

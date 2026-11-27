@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taskbook</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+:root{--bg:#f3f2fa;--surface:#fff;--ink:#1d1b2e;--muted:#6d6a85;--line:#e2e0f0;--accent:#5b4bdb;--danger:#c4314b;--done:#2f9e6e;font-family:system-ui,Arial,sans-serif;color:var(--ink)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);line-height:1.5}
+h1{font-size:1.6rem;margin:1rem 0}
+a{color:inherit;text-decoration:none}
+.container{max-width:640px;margin:0 auto;padding:0 1rem 3rem}
+.header{display:flex;justify-content:space-between;align-items:center;max-width:640px;margin:0 auto;padding:1rem}
+.brand{font-weight:700;font-size:1.25rem;color:var(--accent)}
+.btn{display:inline-block;border:1px solid transparent;border-radius:999px;padding:.5rem 1.1rem;font:inherit;font-weight:500;cursor:pointer}
+.btn--primary{background:var(--accent);color:#fff}
+.btn--ghost{background:transparent;border-color:var(--line);color:var(--ink)}
+.btn--danger{background:transparent;border-color:var(--danger);color:var(--danger)}
+.tabs{display:flex;gap:.25rem;background:var(--line);padding:4px;border-radius:999px;width:fit-content}
+.tab{border:0;background:transparent;padding:.4rem 1rem;border-radius:999px;font:inherit;cursor:pointer;color:var(--muted)}
+.tab.active{background:#fff;color:var(--ink);font-weight:500}
+.bulk{display:flex;justify-content:space-between;align-items:center;margin:1rem 0 .5rem;min-height:2.5rem}
+.check{display:flex;align-items:center;gap:.5rem;color:var(--muted)}
+.list{list-style:none;margin:0;padding:0;display:grid;gap:.6rem}
+.task{display:flex;align-items:center;gap:.75rem;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:.75rem 1rem}
+.task.selected{border-color:var(--accent)}
+.tick{width:26px;height:26px;flex:none;border-radius:50%;border:2px solid var(--accent);background:transparent;color:#fff;cursor:pointer}
+.task.done .tick{background:var(--done);border-color:var(--done)}
+.body{flex:1;display:grid;min-width:0}
+.title{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.task.done .title,h1.done{text-decoration:line-through;color:var(--muted)}
+.date{font-size:.85rem;color:var(--muted)}
+.overdue{color:var(--danger)}
+.actions{display:flex;gap:.75rem}
+.link{background:none;border:0;padding:0;font:inherit;color:var(--accent);cursor:pointer}
+.link.danger{color:var(--danger)}
+.form,.detail{display:grid;gap:1rem;background:var(--surface);padding:1.25rem;border-radius:12px;border:1px solid var(--line)}
+.field{display:grid;gap:.35rem;font-weight:500}
+.field input,.field textarea{font:inherit;padding:.6rem .75rem;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.error{color:var(--danger);font-weight:400}
+.row{display:flex;justify-content:flex-end;gap:.5rem;flex-wrap:wrap}
+.status{display:inline-block;width:fit-content;padding:.1rem .7rem;border-radius:999px;background:var(--bg);color:var(--muted)}
+.empty{text-align:center;padding:3rem 1rem}
+.empty b{font-size:1.2rem}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+/* ---------- Task shape (Sprint 1) ----------
+   { id, title, description, dueDate ("YYYY-MM-DD" or ""), completed, createdAt }
+   filter: "all" | "active" | "completed"
+--------------------------------------------- */
+
+/* ---------- helpers ---------- */
+const KEY = "taskbook.tasks";
+function loadTasks() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { return []; }
+}
+function saveTasks(t) {
+  try { localStorage.setItem(KEY, JSON.stringify(t)); } catch (e) {}
+}
+function formatDate(iso) {
+  if (!iso) return "No due date";
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
+function isOverdue(iso, completed) {
+  if (!iso || completed) return false;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d) < today;
+}
+
+/* ---------- routing via the URL hash (Sprint 5) ---------- */
+function useHash() {
+  const [hash, setHash] = useState(window.location.hash || "#/");
+  useEffect(() => {
+    const onChange = () => setHash(window.location.hash || "#/");
+    window.addEventListener("hashchange", onChange);
+    return () => window.removeEventListener("hashchange", onChange);
+  }, []);
+  return hash;
+}
+const go = (path) => { window.location.hash = path; };
+
+/* ---------- small components (Sprint 4) ---------- */
+function Header() {
+  return (
+    <header className="header">
+      <a href="#/" className="brand">Taskbook</a>
+      <a href="#/tasks/new" className="btn btn--primary">New task</a>
+    </header>
+  );
+}
+
+function FilterTabs({ value, onChange }) {
+  const items = [["all", "All"], ["active", "To do"], ["completed", "Done"]];
+  return (
+    <div className="tabs">
+      {items.map(([v, label]) => (
+        <button key={v} className={"tab " + (value === v ? "active" : "")} onClick={() => onChange(v)}>{label}</button>
+      ))}
+    </div>
+  );
+}
+
+function BulkBar({ total, selected, onToggleAll, onDeleteSelected }) {
+  return (
+    <div className="bulk">
+      <label className="check">
+        <input type="checkbox" checked={total > 0 && selected === total} onChange={onToggleAll} />
+        <span>{selected > 0 ? selected + " selected" : "Select all"}</span>
+      </label>
+      {selected > 0 && <button className="btn btn--danger" onClick={onDeleteSelected}>Delete selected</button>}
+    </div>
+  );
+}
+
+function EmptyState({ filtered }) {
+  return (
+    <div className="empty">
+      <b>{filtered ? "Nothing here yet" : "No tasks yet"}</b>
+      <p>{filtered ? "Try a different filter." : "Add your first task to get started."}</p>
+      {!filtered && <a href="#/tasks/new" className="btn btn--primary">Add a task</a>}
+    </div>
+  );
+}
+
+function TaskItem({ task, selected, onSelect, onToggle, onDelete }) {
+  const overdue = isOverdue(task.dueDate, task.completed);
+  return (
+    <li className={"task " + (task.completed ? "done " : "") + (selected ? "selected" : "")}>
+      <input type="checkbox" checked={selected} onChange={() => onSelect(task.id)} aria-label={"Select " + task.title} />
+      <button className="tick" onClick={() => onToggle(task.id)} aria-label={task.completed ? "Mark as not done" : "Mark as done"}>
+        {task.completed ? "✓" : ""}
+      </button>
+      <a href={"#/tasks/" + task.id} className="body">
+        <span className="title">{task.title}</span>
+        <span className={"date " + (overdue ? "overdue" : "")}>{overdue ? "Overdue: " : ""}{formatDate(task.dueDate)}</span>
+      </a>
+      <div className="actions">
+        <a href={"#/tasks/" + task.id + "/edit"} className="link">Edit</a>
+        <button className="link danger" onClick={() => onDelete(task.id)}>Delete</button>
+      </div>
+    </li>
+  );
+}
+
+function TaskList({ tasks, selectedIds, onSelect, onToggle, onDelete }) {
+  return (
+    <ul className="list">
+      {tasks.map((t) => (
+        <TaskItem key={t.id} task={t} selected={selectedIds.includes(t.id)}
+          onSelect={onSelect} onToggle={onToggle} onDelete={onDelete} />
+      ))}
+    </ul>
+  );
+}
+
+function TaskForm({ initial, submitLabel, onSubmit, onCancel }) {
+  const [values, setValues] = useState(initial || { title: "", description: "", dueDate: "" });
+  const [error, setError] = useState("");
+  const set = (field) => (e) => setValues({ ...values, [field]: e.target.value });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!values.title.trim()) { setError("Enter a title for this task."); return; }
+    onSubmit({ title: values.title.trim(), description: values.description.trim(), dueDate: values.dueDate });
+  };
+
+  return (
+    <form className="form" onSubmit={handleSubmit} noValidate>
+      <label className="field">
+        <span>Title</span>
+        <input value={values.title} onChange={set("title")} placeholder="What needs doing?" />
+        {error && <small className="error">{error}</small>}
+      </label>
+      <label className="field">
+        <span>Description</span>
+        <textarea rows="5" value={values.description} onChange={set("description")} placeholder="Add any details" />
+      </label>
+      <label className="field">
+        <span>Due date</span>
+        <input type="date" value={values.dueDate} onChange={set("dueDate")} />
+      </label>
+      <div className="row">
+        <button type="button" className="btn btn--ghost" onClick={onCancel}>Cancel</button>
+        <button type="submit" className="btn btn--primary">{submitLabel}</button>
+      </div>
+    </form>
+  );
+}
+
+/* ---------- pages ---------- */
+function ListPage({ tasks, filter, actions }) {
+  const [selected, setSelected] = useState([]);
+  const visible = tasks.filter((t) => filter === "all" ? true : filter === "completed" ? t.completed : !t.completed);
+
+  const changeFilter = (f) => { go(f === "all" ? "/" : "/?filter=" + f); setSelected([]); };
+  const toggleSelect = (id) => setSelected(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
+  const toggleAll = () => setSelected(selected.length === visible.length ? [] : visible.map((t) => t.id));
+  const del = (id) => {
+    if (!window.confirm("Delete this task?")) return;
+    actions.remove([id]);
+    setSelected(selected.filter((x) => x !== id));
+  };
+  const delSelected = () => {
+    if (!window.confirm("Delete " + selected.length + " selected task(s)?")) return;
+    actions.remove(selected);
+    setSelected([]);
+  };
+
+  return (
+    <section>
+      <h1>My tasks</h1>
+      <FilterTabs value={filter} onChange={changeFilter} />
+      {visible.length > 0 && (
+        <BulkBar total={visible.length} selected={selected.length} onToggleAll={toggleAll} onDeleteSelected={delSelected} />
+      )}
+      {visible.length === 0
+        ? <EmptyState filtered={tasks.length > 0} />
+        : <TaskList tasks={visible} selectedIds={selected} onSelect={toggleSelect} onToggle={actions.toggle} onDelete={del} />}
+    </section>
+  );
+}
+
+function CreatePage({ actions }) {
+  return (
+    <section>
+      <h1>New task</h1>
+      <TaskForm submitLabel="Add task" onCancel={() => go("/")}
+        onSubmit={(input) => { const id = actions.add(input); go("/tasks/" + id); }} />
+    </section>
+  );
+}
+
+function EditPage({ task, actions }) {
+  if (!task) return <NotFound />;
+  return (
+    <section>
+      <h1>Edit task</h1>
+      <TaskForm key={task.id} submitLabel="Save changes"
+        initial={{ title: task.title, description: task.description, dueDate: task.dueDate }}
+        onCancel={() => go("/tasks/" + task.id)}
+        onSubmit={(input) => { actions.update(task.id, input); go("/tasks/" + task.id); }} />
+    </section>
+  );
+}
+
+function DetailPage({ task, actions }) {
+  if (!task) return <NotFound />;
+  const del = () => {
+    if (!window.confirm("Delete this task?")) return;
+    actions.remove([task.id]);
+    go("/");
+  };
+  return (
+    <section>
+      <a href="#/" className="link">← Back to tasks</a>
+      <article className="detail" style={{ marginTop: "1rem" }}>
+        <h1 className={task.completed ? "done" : ""} style={{ margin: 0 }}>{task.title}</h1>
+        <span className="status">{task.completed ? "Done" : "To do"}</span>
+        <p className={isOverdue(task.dueDate, task.completed) ? "overdue" : ""} style={{ margin: 0 }}>
+          Due: {formatDate(task.dueDate)}
+        </p>
+        <p style={{ whiteSpace: "pre-wrap", margin: 0 }}>{task.description || "No description."}</p>
+        <div className="row">
+          <button className="btn btn--danger" onClick={del}>Delete</button>
+          <a href={"#/tasks/" + task.id + "/edit"} className="btn btn--ghost">Edit</a>
+          <button className="btn btn--primary" onClick={() => actions.toggle(task.id)}>
+            {task.completed ? "Mark as not done" : "Mark as done"}
+          </button>
+        </div>
+      </article>
+    </section>
+  );
+}
+
+function NotFound() {
+  return (
+    <section className="empty">
+      <b>Not found</b>
+      <p>That page or task doesn't exist.</p>
+      <a href="#/" className="btn btn--primary">Back to tasks</a>
+    </section>
+  );
+}
+
+/* ---------- App: state + logic (Sprint 3) + router (Sprint 5) ---------- */
+function App() {
+  const [tasks, setTasks] = useState(loadTasks);
+  const hash = useHash();
+
+  useEffect(() => saveTasks(tasks), [tasks]);
+
+  const actions = {
+    add: (input) => {
+      const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      setTasks((prev) => [{ ...input, id, completed: false, createdAt: new Date().toISOString() }, ...prev]);
+      return id;
+    },
+    update: (id, input) => setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...input } : t))),
+    remove: (ids) => setTasks((prev) => prev.filter((t) => !ids.includes(t.id))),
+    toggle: (id) => setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))),
+  };
+
+  const [path, query = ""] = hash.slice(1).split("?");
+  const parts = path.split("/").filter(Boolean); // e.g. ["tasks", "abc", "edit"]
+  const find = (id) => tasks.find((t) => t.id === id);
+
+  let page;
+  if (parts.length === 0) {
+    const f = new URLSearchParams(query).get("filter");
+    page = <ListPage tasks={tasks} filter={f === "active" || f === "completed" ? f : "all"} actions={actions} />;
+  } else if (parts[0] === "tasks" && parts[1] === "new" && parts.length === 2) {
+    page = <CreatePage actions={actions} />;
+  } else if (parts[0] === "tasks" && parts.length === 2) {
+    page = <DetailPage task={find(parts[1])} actions={actions} />;
+  } else if (parts[0] === "tasks" && parts[2] === "edit" && parts.length === 3) {
+    page = <EditPage task={find(parts[1])} actions={actions} />;
+  } else {
+    page = <NotFound />;
+  }
+
+  return (
+    <>
+      <Header />
+      <main className="container">{page}</main>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

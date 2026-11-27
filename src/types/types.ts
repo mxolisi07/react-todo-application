@@ -1,6 +1,6 @@
 export type userTasks = {
     title: string,
     description: string,
-    dueDate: Date,
+    dueDate: string,
     completed: boolean
 }
